@@ -1,5 +1,4 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import Square from './Square';
 
 class Board extends React.Component {
@@ -12,43 +11,38 @@ class Board extends React.Component {
       />);
   }
 
+  renderColumns(i) { //Render one row of data
+    return (
+      this.props.squares.slice(i*this.props.size, (i+1)*this.props.size)
+        .map((v,j) =>
+          {
+            return (
+              <td key={i*this.props.size+j}>
+                { this.renderSquare(i*this.props.size+j) }
+              </td>
+            )
+          }
+        )
+    );
+  }
+
+  renderRows() { //Render the rows of data
+    return this.props.squares
+      .filter((v, i) => { return i%this.props.size === 0; }) //Filter so only rows left
+      .map((v, i) => { //map each row
+        return (
+          <tr key={i}>
+            {this.renderColumns(i)}
+          </tr>
+        );
+      })
+  }
+
   render() {
     return (
         <table>
           <tbody>
-            <tr>
-              <td>
-                { this.renderSquare(0) }
-              </td>
-              <td>
-                { this.renderSquare(1) }
-              </td>
-              <td>
-                { this.renderSquare(2) }
-              </td>
-            </tr>
-            <tr>
-              <td>
-                { this.renderSquare(3) }
-              </td>
-              <td>
-                { this.renderSquare(4) }
-              </td>
-              <td>
-                { this.renderSquare(5) }
-              </td>
-            </tr>
-            <tr>
-              <td>
-                { this.renderSquare(6) }
-              </td>
-              <td>
-                { this.renderSquare(7) }
-              </td>
-              <td>
-                { this.renderSquare(8) }
-              </td>
-            </tr>
+            { this.renderRows() }
           </tbody>
         </table>
     );

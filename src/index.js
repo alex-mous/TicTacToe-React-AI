@@ -2,9 +2,10 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import ResetButton from './ResetButton';
 import Board from './Board';
+import BoardSizeButton from './BoardSizeButton';
 import './index.css';
 
-//TODO: add board size, cleanup toggle, add styling to page
+//TODO: add board size, cleanup toggle, add styling to page, prevent automatic winner selection
 
 class Game extends React.Component { //Main game component
   constructor(props) {
@@ -12,11 +13,12 @@ class Game extends React.Component { //Main game component
     this.state = {
       frames: [
         {
-          squares: Array(9).fill(null),
+          squares: Array(9).fill(null), //Default array of size 9
           changed: -1, //Square index that was changed
         }
       ],
       index: 0,
+      size: 3, //The size of the board
       current: "X",
       running: true,
       twoplayer: true //Whether the game is two player or player-AI
@@ -24,12 +26,16 @@ class Game extends React.Component { //Main game component
   }
 
   renderResetButton() { //Return the rendered reset button
-    return <ResetButton onClick={() => { this.resetGame() }} />;
+    return <ResetButton onClick={() => { this.resetGame(this.state.size) }} />;
+  }
+
+  renderBoardSize() { //Return the rendered board size incrementer/decrementer
+    return <BoardSizeButton onClick={(inc) => { this.changeBoardSize(inc) }} size={this.state.size} />
   }
 
   renderBoard(frame) { //Return a rendered board
     return (
-      <Board squares={frame} disabled={ !this.state.running } onClick={(i) => { if (this.state.running) this.clickHandler(i); }} />
+      <Board squares={ frame } size={ this.state.size } disabled={ !this.state.running } onClick={(i) => { if (this.state.running) this.clickHandler(i); }} />
     );
   }
 
@@ -53,20 +59,21 @@ class Game extends React.Component { //Main game component
 
   toggleAI() { //Toggle AI/two player mode\
     if (this.state.twoplayer) {
-      if (this.state.current == "O") { //AI's move - trigger click with null value
+      if (this.state.current === "O") { //AI's move - trigger click with null value
         this.aiMove();
       }
     }
     this.setState({ twoplayer: !this.state.twoplayer });
   }
 
-  resetGame() { //Reset the game state to default, clearing all history
+  resetGame(size) { //Reset the game state to default, clearing all history, and set the board size
     this.setState({
       frames: [
-        { squares: Array(9).fill(null) }
+        { squares: Array(size*size).fill(null) }
       ],
       current: "X",
       index: 0, //Current index in the frames
+      size: size,
       running: true, //Allows moves
       game_won: false //Determines whether to show game over features
     });
@@ -78,6 +85,12 @@ class Game extends React.Component { //Main game component
       this.setState({ running: false, game_won: false });
     } else {
       this.setState({ running: false, game_won: true });
+    }
+  }
+
+  changeBoardSize(inc) {
+    if (this.state.frames.length <= 1) { //Check that we are at a new game before setting size
+      this.resetGame( this.state.size + inc );
     }
   }
 
@@ -127,11 +140,11 @@ class Game extends React.Component { //Main game component
         }
         return best;
     } else { //Base case
-      if (score == "X") { //User won - worst outcome
+      if (score === "X") { //User won - worst outcome
         return -1;
-      } else if (score == "O") { //AI won - return positive tScore
+      } else if (score === "O") { //AI won - return positive tScore
         return 1;
-      } else if (score == "") { //Tie
+      } else if (score === "") { //Tie
         return 0;
       }
     }
@@ -198,37 +211,82 @@ class Game extends React.Component { //Main game component
   gameOverCheck(board, actual) { //Determines if the game is over and changes the state (actual is true if changing the state and returning boolean, false for returning winner)
     let sq = board;
 
-    for (var i=0; i<8; i+=3) { //Horizontal
-      if (sq[i] != null && sq[i] === sq[i+1] && sq[i] === sq[i+2]) {
-        if (actual) {
-          this.setState({ current: sq[i], running: false, game_won: true });
-          return true;
-        } else {
-          return sq[i];
+    for (let i=0; i<this.state.size*this.state.size-1; i+=this.state.size) { //Horizontal - rows
+      let curr = sq[i];
+      if (curr !== null) {
+        for (let j=1; j<this.state.size; j++) {
+          if (sq[i+j] !== curr) {
+            curr = null;
+            break;
+          }
+        }
+        if (curr !== null) {
+          if (actual) {
+            this.setState({ current: curr, running: false, game_won: true });
+            return true;
+          } else {
+            return curr;
+          }
         }
       }
     }
 
-    for (var j=0; j<=3; j++) { //Vertical
-      if (sq[j] != null && sq[j] === sq[j+3] && sq[j] === sq[j+6]) {
-        if (actual) {
-          this.setState({ current: sq[j], running: false, game_won: true });
-          return true;
-        } else {
-          return sq[j];
+    for (let i=0; i<this.state.size; i++) { //Vertical - columns
+      let curr = sq[i];
+      if (curr !== null) {
+        for (let j=1; j<this.state.size; j+=1) {
+          if (sq[i+(j*this.state.size)] !== curr) {
+            curr = null;
+            break;
+          }
+        }
+        if (curr !== null) {
+          if (actual) {
+            this.setState({ current: curr, running: false, game_won: true });
+            return true;
+          } else {
+            return curr;
+          }
         }
       }
     }
 
-    if ((sq[0] != null && sq[0] === sq[4]
-          && sq[0] === sq[8]) || (sq[2] != null
-          && sq[2] === sq[4] && sq[2] === sq[6])) { //Diagonal
+    //Left-slanting diagonal
+    let curr = sq[0];
+    if (curr !== null) {
+      for (let i=0; i<this.state.size*this.state.size; i+=this.state.size+1) {
+        if (sq[i] !== curr) {
+          curr = null;
+          break;
+        }
+      }
+      if (curr !== null) {
         if (actual) {
-          this.setState({ current: sq[4], running: false, game_won: true });
+          this.setState({ current: curr, running: false, game_won: true });
           return true;
         } else {
-          return sq[4];
+          return curr;
         }
+      }
+    }
+
+    //Right-slanting diagonal
+    curr = sq[this.state.size-1];
+    if (curr !== null) {
+      for (let i=this.state.size-1; i<this.state.size*this.state.size-1; i+=this.state.size-1) {
+        if (sq[i] !== curr) {
+          curr = null;
+          break;
+        }
+      }
+      if (curr !== null) {
+        if (actual) {
+          this.setState({ current: curr, running: false, game_won: true });
+          return true;
+        } else {
+          return curr;
+        }
+      }
     }
 
     let tie = true; //If there is no winner yet, check for a tie
@@ -269,7 +327,7 @@ class Game extends React.Component { //Main game component
     return (
       <div className="row mt-5">
         <div className="col-md-9">
-          <h1 className="text-center">Noughts and Crosses</h1>
+          <h1 className="text-center">Tic Tac Toe</h1>
           <div className="text-center my-3">
             { msg }
           </div>
@@ -279,9 +337,14 @@ class Game extends React.Component { //Main game component
         </div>
         <div className="col-md-3">
           <div className="pt-4 row text-center">
-            <span class="toggle-main">
+            <h3 className="text-center">
+              { this.renderBoardSize() }
+            </h3>
+          </div>
+          <div className="pt-4 row text-center">
+            <span className="toggle-main">
               <input type="checkbox" name="toggle" id="toggle-ai" onChange={() => this.toggleAI()} />
-              <span class="toggle-padding"></span>
+              <span className="toggle-padding"></span>
             </span>
             <h3 className="text-center">
               <label htmlFor="toggle-ai">Enable AI</label>
