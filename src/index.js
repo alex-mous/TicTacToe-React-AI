@@ -5,7 +5,7 @@ import Board from './Board';
 import BoardSizeButton from './BoardSizeButton';
 import './index.css';
 
-//TODO: add board size, cleanup toggle, add styling to page, prevent automatic winner selection
+//TODO: cleanup toggle, add styling to page, prevent automatic winner selection
 
 class Game extends React.Component { //Main game component
   constructor(props) {
@@ -201,8 +201,6 @@ class Game extends React.Component { //Main game component
           if (!this.gameOverCheck(this.state.frames[this.state.index].squares, true)) {
             this.setState({ running: true, current: "X" });
           }
-        } else {
-          this.setState({ running: false, current: "X" });
         }
       }, 350);
     }
